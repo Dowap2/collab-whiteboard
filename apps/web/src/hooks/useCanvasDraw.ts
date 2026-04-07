@@ -16,7 +16,7 @@ export function useCanvasDraw(
   const currentId = useRef<string | null>(null);
   const { tool, strokeColor, strokeWidth } = useCanvasStore();
 
-  const getCtx = () => canvasRef.current?.getContext("2d") ?? null;
+  const getCtx = useCallback(() => canvasRef.current?.getContext("2d") ?? null, [canvasRef]);
 
   const redrawAll = useCallback(() => {
     const canvas = canvasRef.current;
@@ -24,49 +24,52 @@ export function useCanvasDraw(
     if (!canvas || !ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const elements = yElements.toArray();
-
-    for (const el of elements) {
+    for (const el of yElements.toArray()) {
       drawElement(ctx, el);
     }
-  }, [yElements, canvasRef]);
+  }, [canvasRef, getCtx, yElements]);
 
-  const startDrawing = useCallback((point: Point) => {
-    if (tool === "select") return;
+  const startDrawing = useCallback(
+    (point: Point) => {
+      if (tool === "select") return;
+      isDrawing.current = true;
+      const id = uuidv4();
+      currentId.current = id;
 
-    isDrawing.current = true;
-    const id = uuidv4();
-    currentId.current = id;
+      if (tool === "pen") {
+        const el: PenElement = {
+          id,
+          type: "pen",
+          strokeColor,
+          strokeWidth,
+          createdBy: participantId,
+          points: [point],
+        };
+        ydoc.transact(() => yElements.push([el]), "local");
+      }
+    },
+    [tool, strokeColor, strokeWidth, participantId, ydoc, yElements],
+  );
 
-    if (tool === "pen") {
-      const el: PenElement = {
-        id,
-        type: "pen",
-        strokeColor,
-        strokeWidth,
-        createdBy: participantId,
-        points: [point],
-      };
-      ydoc.transact(() => yElements.push([el]));
-    }
-  }, [tool, strokeColor, strokeWidth, participantId, ydoc, yElements]);
+  const continueDrawing = useCallback(
+    (point: Point) => {
+      if (!isDrawing.current || !currentId.current) return;
+      if (tool !== "pen") return;
 
-  const continueDrawing = useCallback((point: Point) => {
-    if (!isDrawing.current || !currentId.current) return;
-    if (tool !== "pen") return;
+      const elements = yElements.toArray();
+      const idx = elements.findIndex((el) => el.id === currentId.current);
+      if (idx === -1) return;
 
-    const elements = yElements.toArray();
-    const idx = elements.findIndex((el) => el.id === currentId.current);
-    if (idx === -1) return;
-
-    const el = elements[idx] as PenElement;
-    const updated: PenElement = { ...el, points: [...el.points, point] };
-
-    ydoc.transact(() => {
-      yElements.delete(idx, 1);
-      yElements.insert(idx, [updated]);
-    });
-  }, [tool, ydoc, yElements]);
+      const el = elements[idx] as PenElement;
+      // Yjs Map을 쓰지 않고 Array 방식 유지하되, 단일 transact으로 처리
+      const updated: PenElement = { ...el, points: [...el.points, point] };
+      ydoc.transact(() => {
+        yElements.delete(idx, 1);
+        yElements.insert(idx, [updated]);
+      }, "local");
+    },
+    [tool, ydoc, yElements],
+  );
 
   const stopDrawing = useCallback(() => {
     isDrawing.current = false;
@@ -86,13 +89,12 @@ function drawElement(ctx: CanvasRenderingContext2D, el: CanvasElement) {
   switch (el.type) {
     case "pen": {
       const { points } = el;
-      if (points.length < 2) {
-        if (points.length === 1) {
-          ctx.beginPath();
-          ctx.arc(points[0].x, points[0].y, el.strokeWidth / 2, 0, Math.PI * 2);
-          ctx.fillStyle = el.strokeColor;
-          ctx.fill();
-        }
+      if (points.length === 0) break;
+      if (points.length === 1) {
+        ctx.beginPath();
+        ctx.arc(points[0].x, points[0].y, el.strokeWidth / 2, 0, Math.PI * 2);
+        ctx.fillStyle = el.strokeColor;
+        ctx.fill();
         break;
       }
       ctx.beginPath();

@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getSocket } from "@/lib/socket";
 import { useRoomStore } from "@/store/roomStore";
-import type { Participant } from "@whiteboard/types";
+import type { Participant, Room } from "@whiteboard/types";
 
 export function useSocketRoom(roomId: string) {
   const { room, participantId, nickname, addParticipant, removeParticipant, updateCursor } = useRoomStore();
 
+  // room을 ref로 관리해 이벤트 핸들러에서 항상 최신값 참조 (effect 재실행 없이)
+  const roomRef = useRef<Room | null>(room);
+  roomRef.current = room;
+
   useEffect(() => {
-    if (!room || !participantId || !nickname) return;
+    if (!participantId || !nickname || !roomRef.current) return;
 
     const socket = getSocket();
     socket.connect();
 
-    const me = room.participants.find((p) => p.id === participantId);
+    const me = roomRef.current.participants.find((p) => p.id === participantId);
 
     socket.emit("room:join" as never, {
       roomId,
@@ -33,7 +37,7 @@ export function useSocketRoom(roomId: string) {
     });
 
     socket.on("cursor:updated", ({ participantId: id, position }) => {
-      const participant = room.participants.find((p) => p.id === id);
+      const participant = roomRef.current?.participants.find((p) => p.id === id);
       updateCursor(id, position.x, position.y, participant?.color ?? "#ffffff", participant?.nickname ?? "");
     });
 
@@ -43,5 +47,5 @@ export function useSocketRoom(roomId: string) {
       socket.off("cursor:updated");
       socket.disconnect();
     };
-  }, [roomId, room, participantId, nickname, addParticipant, removeParticipant, updateCursor]);
+  }, [roomId, participantId, nickname, addParticipant, removeParticipant, updateCursor]);
 }

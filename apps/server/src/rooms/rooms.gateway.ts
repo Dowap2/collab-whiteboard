@@ -75,7 +75,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!ydoc) return;
 
     const update = Uint8Array.from(Buffer.from(data.update, 'base64'));
-    Y.applyUpdate(ydoc, update);
+    Y.applyUpdate(ydoc, update, 'remote');
 
     client.to(data.roomId).emit('yjs:update', data.update);
   }

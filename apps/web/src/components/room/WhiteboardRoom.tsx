@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { css } from "@emotion/css";
 import { useRoomStore } from "@/store/roomStore";
@@ -17,10 +17,15 @@ interface Props {
 export function WhiteboardRoom({ roomId }: Props) {
   const router = useRouter();
   const { room, participantId, nickname } = useRoomStore();
+  // 최초 마운트 시에만 유효성 체크 → 이후 store 변경(참가자 추가/제거)에 반응하지 않도록
+  const initializedRef = useRef(false);
 
   useSocketRoom(roomId);
 
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     if (!room || !participantId) {
       router.replace("/");
     }

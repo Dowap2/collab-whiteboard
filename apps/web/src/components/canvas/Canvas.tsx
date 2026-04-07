@@ -2,13 +2,10 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { css } from "@emotion/css";
-import * as Y from "yjs";
 import { useCanvasStore } from "@/store/canvasStore";
 import { useYjsCanvas } from "@/hooks/useYjsCanvas";
 import { useCanvasDraw } from "@/hooks/useCanvasDraw";
-import { useSocketRoom } from "@/hooks/useSocketRoom";
 import { getSocket } from "@/lib/socket";
-import type { Point } from "@whiteboard/types";
 
 interface Props {
   roomId: string;
@@ -21,7 +18,12 @@ export function Canvas({ roomId, participantId }: Props) {
   const { tool } = useCanvasStore();
 
   const { ydoc, yElements } = useYjsCanvas(roomId);
-  const { startDrawing, continueDrawing, stopDrawing, redrawAll } = useCanvasDraw(canvasRef, ydoc, yElements, participantId);
+  const { startDrawing, continueDrawing, stopDrawing, redrawAll } = useCanvasDraw(
+    canvasRef,
+    ydoc,
+    yElements,
+    participantId,
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -46,35 +48,41 @@ export function Canvas({ roomId, participantId }: Props) {
     return () => yElements.unobserve(handler);
   }, [yElements, redrawAll]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      startDrawing({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    },
+    [startDrawing],
+  );
 
-    continueDrawing({ x, y });
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    getSocket().emit("cursor:move", {
-      roomId,
-      participantId,
-      position: { x, y },
-    } as never);
-  }, [continueDrawing, roomId, participantId]);
+      continueDrawing({ x, y });
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    startDrawing({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, [startDrawing]);
+      getSocket().emit("cursor:move", {
+        roomId,
+        participantId,
+        position: { x, y },
+      } as never);
+    },
+    [continueDrawing, roomId, participantId],
+  );
 
   const handleMouseUp = useCallback(() => stopDrawing(), [stopDrawing]);
 
   const cursor =
-    tool === "pen" ? "crosshair" :
-    tool === "eraser" ? "cell" :
-    tool === "text" ? "text" :
-    tool === "select" ? "default" :
-    "crosshair";
+    tool === "pen" ? "crosshair"
+    : tool === "eraser" ? "cell"
+    : tool === "text" ? "text"
+    : tool === "select" ? "default"
+    : "crosshair";
 
   return (
     <div ref={containerRef} className={styles.container}>
