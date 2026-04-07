@@ -1,0 +1,11 @@
+{
+  "extends": "@whiteboard/config/tsconfig/nestjs",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

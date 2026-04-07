@@ -1,0 +1,12 @@
+{
+  "name": "@whiteboard/config",
+  "private": true,
+  "version": "0.0.0",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/next": "./eslint/next.js",
+    "./tsconfig/base": "./tsconfig/base.json",
+    "./tsconfig/nextjs": "./tsconfig/nextjs.json",
+    "./tsconfig/nestjs": "./tsconfig/nestjs.json"
+  }
+}

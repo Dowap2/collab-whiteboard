@@ -1,0 +1,34 @@
+{
+  "name": "@whiteboard/server",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/websockets": "^10.4.15",
+    "@nestjs/platform-socket.io": "^10.4.15",
+    "@whiteboard/types": "workspace:*",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0",
+    "yjs": "^13.6.24"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.9",
+    "@nestjs/schematics": "^10.2.3",
+    "@types/express": "^5.0.1",
+    "@types/node": "^20.19.0",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.7.3",
+    "@whiteboard/config": "workspace:*"
+  }
+}
