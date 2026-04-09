@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @whiteboard/web add fabric@5 jspdf)",
+      "Bash(pnpm --filter @whiteboard/server add -D @types/multer)",
+      "Bash(pnpm --filter @whiteboard/server add @nestjs/serve-static)",
+      "Bash(pnpm --filter @whiteboard/server type-check)",
+      "Bash(pnpm --filter @whiteboard/web type-check)",
+      "Bash(pnpm --filter @whiteboard/web add -D @types/fabric)",
+      "Bash(xargs grep:*)",
+      "Bash(pnpm --filter @whiteboard/server build)",
+      "Bash(pnpm --filter @whiteboard/web build)",
+      "Bash(node -e \"console.log\\(require\\('C:/Users/OKM/Desktop/Dev/collab-whiteboard/apps/web/node_modules/pdfjs-dist/package.json'\\).version\\)\")",
+      "Bash(pnpm --filter @whiteboard/web exec tsc --noEmit)"
+    ]
+  }
+}

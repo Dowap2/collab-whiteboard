@@ -1,8 +1,25 @@
-export type ToolType = "pen" | "line" | "rect" | "ellipse" | "text" | "eraser" | "select";
+export type ToolType =
+  | "select"
+  | "pen"
+  | "line"
+  | "rect"
+  | "ellipse"
+  | "text"
+  | "image"
+  | "eraser"
+  | "laser";
+
+export type PageSize = "A4" | "16:9" | "4:3";
 
 export interface Point {
   x: number;
   y: number;
+}
+
+export interface Page {
+  id: string;
+  index: number;
+  size: PageSize;
 }
 
 export interface BaseElement {
@@ -15,7 +32,8 @@ export interface BaseElement {
 
 export interface PenElement extends BaseElement {
   type: "pen";
-  points: Point[];
+  /** fabric.js Path의 SVG path 문자열 (M, L, Q, C 등 곡선 명령 포함) */
+  pathData: string;
 }
 
 export interface LineElement extends BaseElement {
@@ -31,6 +49,7 @@ export interface RectElement extends BaseElement {
   width: number;
   height: number;
   fillColor?: string;
+  angle: number;
 }
 
 export interface EllipseElement extends BaseElement {
@@ -40,14 +59,33 @@ export interface EllipseElement extends BaseElement {
   rx: number;
   ry: number;
   fillColor?: string;
+  angle: number;
 }
 
 export interface TextElement extends BaseElement {
   type: "text";
-  x: number;
-  y: number;
+  left: number;
+  top: number;
+  width: number;
   content: string;
   fontSize: number;
+  fontWeight: "normal" | "bold";
+  align: "left" | "center" | "right";
+  color: string;
+  angle: number;
+}
+
+export interface ImageElement extends BaseElement {
+  type: "image";
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  src: string;
+  hash: string;
+  scaleX: number;
+  scaleY: number;
+  angle: number;
 }
 
 export type CanvasElement =
@@ -55,4 +93,5 @@ export type CanvasElement =
   | LineElement
   | RectElement
   | EllipseElement
-  | TextElement;
+  | TextElement
+  | ImageElement;

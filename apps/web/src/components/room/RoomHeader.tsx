@@ -2,16 +2,23 @@
 
 import { css } from "@emotion/css";
 import { useRouter } from "next/navigation";
+import * as Y from "yjs";
 import { useRoomStore } from "@/store/roomStore";
-import type { Room } from "@whiteboard/types";
+import { usePdfExport } from "@/hooks/usePdfExport";
+import type { Room, CanvasElement } from "@whiteboard/types";
 
 interface Props {
   room: Room;
+  isTeacher: boolean;
+  ydoc: Y.Doc;
+  yPages: Y.Map<Y.Array<CanvasElement>>;
+  yPageOrder: Y.Array<string>;
 }
 
-export function RoomHeader({ room }: Props) {
+export function RoomHeader({ room, isTeacher, yPages, yPageOrder }: Props) {
   const router = useRouter();
   const reset = useRoomStore((s) => s.reset);
+  const { exportToPDF, exporting } = usePdfExport({ room, yPages, yPageOrder });
 
   const handleLeave = () => {
     reset();
@@ -25,24 +32,29 @@ export function RoomHeader({ room }: Props) {
   return (
     <header className={styles.header}>
       <div className={styles.left}>
+        <span className={styles.appName}>Lesson Canvas</span>
         <span className={styles.roomName}>{room.name}</span>
       </div>
 
       <div className={styles.center}>
         <button className={styles.codeButton} onClick={handleCopyCode} title="클릭하여 복사">
-          <span className={styles.codeLabel}>방 코드</span>
+          <span className={styles.codeLabel}>코드</span>
           <span className={styles.code}>{room.code}</span>
         </button>
       </div>
 
       <div className={styles.right}>
+        <span className={styles.studentCount}>
+          학생 {room.participants.filter((p) => p.role === "student").length}명
+        </span>
+
         <div className={styles.participants}>
           {room.participants.slice(0, 5).map((p) => (
             <div
               key={p.id}
               className={styles.avatar}
               style={{ background: p.color }}
-              title={p.nickname}
+              title={`${p.nickname} (${p.role === "teacher" ? "선생님" : "학생"})`}
             >
               {p.nickname[0].toUpperCase()}
             </div>
@@ -51,6 +63,13 @@ export function RoomHeader({ room }: Props) {
             <div className={styles.avatarMore}>+{room.participants.length - 5}</div>
           )}
         </div>
+
+        {isTeacher && (
+          <button className={styles.pdfButton} onClick={exportToPDF} disabled={exporting}>
+            {exporting ? "출력 중..." : "PDF 출력"}
+          </button>
+        )}
+
         <button className={styles.leaveButton} onClick={handleLeave}>
           나가기
         </button>
@@ -72,11 +91,19 @@ const styles = {
   `,
   left: css`
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  `,
+  appName: css`
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a9eff;
   `,
   roomName: css`
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    color: #fff;
+    color: #d1d5db;
   `,
   center: css`
     flex: 1;
@@ -113,6 +140,10 @@ const styles = {
     justify-content: flex-end;
     gap: 12px;
   `,
+  studentCount: css`
+    font-size: 12px;
+    color: #6b7280;
+  `,
   participants: css`
     display: flex;
     align-items: center;
@@ -144,6 +175,17 @@ const styles = {
     margin-left: -6px;
     border: 2px solid #1a1a1a;
   `,
+  pdfButton: css`
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #f3f4f6;
+    background: #2563eb;
+    border: none;
+    cursor: pointer;
+    &:hover { background: #1d4ed8; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  `,
   leaveButton: css`
     padding: 6px 14px;
     border-radius: 6px;
@@ -151,8 +193,6 @@ const styles = {
     color: #ff6b6b;
     border: 1px solid #ff6b6b33;
     transition: all 0.2s;
-    &:hover {
-      background: #ff6b6b22;
-    }
+    &:hover { background: #ff6b6b22; }
   `,
 };

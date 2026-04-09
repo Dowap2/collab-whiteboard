@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import * as Y from 'yjs';
 import { RoomsService } from './rooms.service';
-import type { CursorPosition } from '@whiteboard/types';
+import type { CursorPosition, Role } from '@whiteboard/types';
 
 interface SocketData {
   roomId: string;
@@ -48,7 +48,13 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('room:join')
   handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: string; participantId: string; nickname: string; color: string },
+    @MessageBody() data: {
+      roomId: string;
+      participantId: string;
+      nickname: string;
+      color: string;
+      role: Role;
+    },
   ) {
     client.join(data.roomId);
     this.socketData.set(client.id, { roomId: data.roomId, participantId: data.participantId });
@@ -57,8 +63,10 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       participantId: data.participantId,
       nickname: data.nickname,
       color: data.color,
+      role: data.role,
     });
 
+    // 현재 Yjs 상태 전송 (신규 입장자에게 sync)
     const ydoc = this.roomsService.getYDoc(data.roomId);
     if (ydoc) {
       const state = Y.encodeStateAsUpdate(ydoc);
@@ -83,11 +91,12 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('cursor:move')
   handleCursorMove(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: string; participantId: string; position: CursorPosition },
+    @MessageBody() data: { roomId: string; participantId: string; position: CursorPosition; isLaser?: boolean },
   ) {
     client.to(data.roomId).emit('cursor:updated', {
       participantId: data.participantId,
       position: data.position,
+      isLaser: data.isLaser,
     });
   }
 }

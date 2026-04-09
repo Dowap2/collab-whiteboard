@@ -22,6 +22,7 @@ export class RoomsService {
       id: participantId,
       nickname: dto.nickname,
       color: PARTICIPANT_COLORS[0],
+      role: 'teacher',
     };
 
     const room: Room = {
@@ -31,6 +32,7 @@ export class RoomsService {
       createdAt: new Date().toISOString(),
       hostId: participantId,
       participants: [participant],
+      drawPermission: 'teacher-only',
     };
 
     this.rooms.set(code, room);
@@ -43,8 +45,28 @@ export class RoomsService {
     const room = this.rooms.get(dto.code);
     if (!room) throw new NotFoundException('Room not found');
 
-    const alreadyExists = room.participants.some(p => p.nickname === dto.nickname);
-    if (alreadyExists) throw new BadRequestException('Nickname already taken in this room');
+    // 재입장: 기존 participantId가 있고 hostId와 일치하면 teacher로 복원
+    if (dto.participantId) {
+      const existing = room.participants.find(p => p.id === dto.participantId);
+      if (existing) {
+        // 이미 목록에 있으면 그대로 반환 (재연결)
+        return { room, participantId: existing.id };
+      }
+      // hostId와 일치하면 teacher로 재입장
+      if (dto.participantId === room.hostId) {
+        const participant: Participant = {
+          id: dto.participantId,
+          nickname: dto.nickname,
+          color: PARTICIPANT_COLORS[0],
+          role: 'teacher',
+        };
+        room.participants.push(participant);
+        return { room, participantId: dto.participantId };
+      }
+    }
+
+    const nicknameConflict = room.participants.some(p => p.nickname === dto.nickname);
+    if (nicknameConflict) throw new BadRequestException('Nickname already taken in this room');
 
     const participantId = uuidv4();
     const color = PARTICIPANT_COLORS[room.participants.length % PARTICIPANT_COLORS.length];
@@ -53,6 +75,7 @@ export class RoomsService {
       id: participantId,
       nickname: dto.nickname,
       color,
+      role: 'student',
     };
 
     room.participants.push(participant);

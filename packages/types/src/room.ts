@@ -1,3 +1,5 @@
+export type Role = "teacher" | "student";
+
 export interface Room {
   id: string;
   code: string;
@@ -5,12 +7,14 @@ export interface Room {
   createdAt: string;
   hostId: string;
   participants: Participant[];
+  drawPermission: "teacher-only" | "all";
 }
 
 export interface Participant {
   id: string;
   nickname: string;
   color: string;
+  role: Role;
   cursor?: CursorPosition;
 }
 
@@ -27,6 +31,7 @@ export interface CreateRoomDto {
 export interface JoinRoomDto {
   code: string;
   nickname: string;
+  participantId?: string; // 재입장 시 기존 ID 복원
 }
 
 export interface JoinRoomResponse {

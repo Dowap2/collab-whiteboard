@@ -5,12 +5,12 @@ interface RoomStore {
   room: Room | null;
   participantId: string | null;
   nickname: string | null;
-  cursors: Record<string, { x: number; y: number; color: string; nickname: string }>;
+  cursors: Record<string, { x: number; y: number; color: string; nickname: string; isLaser?: boolean }>;
 
   setRoom: (room: Room, participantId: string, nickname: string) => void;
   addParticipant: (participant: Participant) => void;
   removeParticipant: (participantId: string) => void;
-  updateCursor: (participantId: string, x: number, y: number, color: string, nickname: string) => void;
+  updateCursor: (participantId: string, x: number, y: number, color: string, nickname: string, isLaser?: boolean) => void;
   reset: () => void;
 }
 
@@ -48,9 +48,9 @@ export const useRoomStore = create<RoomStore>((set) => ({
       };
     }),
 
-  updateCursor: (participantId, x, y, color, nickname) =>
+  updateCursor: (participantId, x, y, color, nickname, isLaser) =>
     set((state) => ({
-      cursors: { ...state.cursors, [participantId]: { x, y, color, nickname } },
+      cursors: { ...state.cursors, [participantId]: { x, y, color, nickname, isLaser } },
     })),
 
   reset: () => set({ room: null, participantId: null, nickname: null, cursors: {} }),
