@@ -136,11 +136,32 @@ export function useFabricCanvas({
     };
     const onSelectionCleared = () => useCanvasStore.getState().setSelectedElement(null);
 
+    // 지우개: mouse:down으로 클릭한 객체 삭제
+    const onMouseDown = (opt: { target?: AnyFabric; e: MouseEvent }) => {
+      const currentTool = useCanvasStore.getState().tool;
+      if (currentTool !== "eraser") return;
+      if (!canDrawRef.current) return;
+      const target = opt.target;
+      if (!target?.data?.id) return;
+
+      const id: string = target.data.id;
+      const yArr = yPagesRef.current.get(pageIdRef.current);
+      if (!yArr) return;
+      const elements = yArr.toArray();
+      const idx = elements.findIndex((el) => el.id === id);
+      if (idx !== -1) {
+        ydoc.transact(() => yArr.delete(idx, 1), "local");
+      }
+      fc.remove(target);
+      fc.renderAll();
+    };
+
     fc.on("path:created", onPathCreated);
     fc.on("object:modified", onObjectModified);
     fc.on("selection:created", onSelectionCreated);
     fc.on("selection:updated", onSelectionCreated);
     fc.on("selection:cleared", onSelectionCleared);
+    fc.on("mouse:down", onMouseDown);
 
     return () => {
       fc.off("path:created", onPathCreated);
@@ -148,6 +169,7 @@ export function useFabricCanvas({
       fc.off("selection:created", onSelectionCreated);
       fc.off("selection:updated", onSelectionCreated);
       fc.off("selection:cleared", onSelectionCleared);
+      fc.off("mouse:down", onMouseDown);
       fc.dispose();
       fabricRef.current = null;
     };
@@ -233,6 +255,19 @@ export function useFabricCanvas({
       fc.freeDrawingBrush.width = strokeWidth;
     }
 
+    // 지우개 모드: 객체를 클릭 가능하게 하되 선택은 불가
+    fc.getObjects().forEach((obj: AnyFabric) => {
+      if (tool === "eraser") {
+        obj.selectable = false;
+        obj.evented = canDraw;
+        obj.hoverCursor = "pointer";
+      } else {
+        obj.selectable = canDraw && tool === "select";
+        obj.evented = canDraw;
+        obj.hoverCursor = undefined;
+      }
+    });
+
     // 커서 오버라이드: 펜/지우개일 때 동그라미 커서
     if (tool === "pen") {
       const r = Math.max(strokeWidth / 2, 2);
@@ -256,10 +291,6 @@ export function useFabricCanvas({
       fc.hoverCursor = "move";
     }
 
-    fc.getObjects().forEach((obj: AnyFabric) => {
-      obj.selectable = canDraw && tool === "select";
-      obj.evented = canDraw;
-    });
     fc.renderAll();
   }, [tool, strokeColor, strokeWidth, canDraw]);
 

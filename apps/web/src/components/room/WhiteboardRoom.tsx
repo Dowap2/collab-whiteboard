@@ -60,9 +60,10 @@ export function WhiteboardRoom({ roomId }: Props) {
 
   // 전역 키보드 단축키 (Ctrl+Z/Y, 도구 전환, 방향키 페이지 이동)
   useEffect(() => {
-    const TOOL_SHORTCUTS: Record<string, ToolType> = {
-      v: "select", p: "pen", l: "line", r: "rect",
-      e: "ellipse", t: "text", i: "image", x: "eraser", g: "laser",
+    // e.code 기반 단축키 (포토샵 기준, 한글 IME 상태에서도 동작)
+    const CODE_SHORTCUTS: Record<string, ToolType> = {
+      KeyV: "select", KeyB: "pen", KeyL: "line", KeyU: "rect",
+      KeyO: "ellipse", KeyT: "text", KeyI: "image", KeyE: "eraser", KeyG: "laser",
     };
 
     const handler = (e: KeyboardEvent) => {
@@ -73,17 +74,17 @@ export function WhiteboardRoom({ roomId }: Props) {
 
       if (e.ctrlKey || e.metaKey) {
         if (!isTeacher) return;
-        if (e.key === "z") { e.preventDefault(); undo(); }
-        if (e.key === "y") { e.preventDefault(); redo(); }
+        if (e.code === "KeyZ") { e.preventDefault(); undo(); }
+        if (e.code === "KeyY") { e.preventDefault(); redo(); }
         return;
       }
 
       // 방향키 → 페이지 이동 (teacher만)
-      if (isTeacher && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      if (isTeacher && (e.code === "ArrowLeft" || e.code === "ArrowRight")) {
         e.preventDefault();
         const idx = pageOrder.indexOf(currentPageId);
         if (idx === -1) return;
-        const nextIdx = e.key === "ArrowLeft" ? idx - 1 : idx + 1;
+        const nextIdx = e.code === "ArrowLeft" ? idx - 1 : idx + 1;
         if (nextIdx >= 0 && nextIdx < pageOrder.length) {
           goToPage(pageOrder[nextIdx]);
         }
@@ -92,11 +93,11 @@ export function WhiteboardRoom({ roomId }: Props) {
 
       // 도구 단축키 (수정키 없이)
       if (!e.altKey) {
-        if (e.key === "Escape") {
+        if (e.code === "Escape") {
           useCanvasStore.getState().setTool("select");
           return;
         }
-        const tool = TOOL_SHORTCUTS[e.key.toLowerCase()];
+        const tool = CODE_SHORTCUTS[e.code];
         if (tool) {
           e.preventDefault();
           useCanvasStore.getState().setTool(tool);
@@ -104,8 +105,8 @@ export function WhiteboardRoom({ roomId }: Props) {
       }
     };
 
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, [isTeacher, undo, redo, pageOrder, currentPageId, goToPage]);
 
   useEffect(() => {
