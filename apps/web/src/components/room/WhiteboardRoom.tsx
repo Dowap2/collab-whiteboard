@@ -58,7 +58,7 @@ export function WhiteboardRoom({ roomId }: Props) {
     return () => yMeta.unobserve(handler);
   }, [yMeta]);
 
-  // 전역 키보드 단축키 (Ctrl+Z/Y, 도구 전환)
+  // 전역 키보드 단축키 (Ctrl+Z/Y, 도구 전환, 방향키 페이지 이동)
   useEffect(() => {
     const TOOL_SHORTCUTS: Record<string, ToolType> = {
       v: "select", p: "pen", l: "line", r: "rect",
@@ -78,6 +78,18 @@ export function WhiteboardRoom({ roomId }: Props) {
         return;
       }
 
+      // 방향키 → 페이지 이동 (teacher만)
+      if (isTeacher && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        const idx = pageOrder.indexOf(currentPageId);
+        if (idx === -1) return;
+        const nextIdx = e.key === "ArrowLeft" ? idx - 1 : idx + 1;
+        if (nextIdx >= 0 && nextIdx < pageOrder.length) {
+          goToPage(pageOrder[nextIdx]);
+        }
+        return;
+      }
+
       // 도구 단축키 (수정키 없이)
       if (!e.altKey) {
         if (e.key === "Escape") {
@@ -94,7 +106,7 @@ export function WhiteboardRoom({ roomId }: Props) {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isTeacher, undo, redo]);
+  }, [isTeacher, undo, redo, pageOrder, currentPageId, goToPage]);
 
   useEffect(() => {
     if (initializedRef.current) return;
