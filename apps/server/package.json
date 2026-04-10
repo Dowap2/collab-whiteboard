@@ -17,6 +17,7 @@
     "@nestjs/serve-static": "^5.0.4",
     "@nestjs/websockets": "^10.4.15",
     "@whiteboard/types": "workspace:*",
+    "multer": "^2.1.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "socket.io": "^4.8.1",
