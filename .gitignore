@@ -7,4 +7,5 @@ storybook-static
 .env.local
 .env*.local
 !.env.example
+!.env.production
 apps/server/uploads/
