@@ -11,7 +11,17 @@
       "Bash(pnpm --filter @whiteboard/server build)",
       "Bash(pnpm --filter @whiteboard/web build)",
       "Bash(node -e \"console.log\\(require\\('C:/Users/OKM/Desktop/Dev/collab-whiteboard/apps/web/node_modules/pdfjs-dist/package.json'\\).version\\)\")",
-      "Bash(pnpm --filter @whiteboard/web exec tsc --noEmit)"
+      "Bash(pnpm --filter @whiteboard/web exec tsc --noEmit)",
+      "Bash(pnpm --version)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(pnpm add:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(node:*)",
+      "Bash(pnpm --filter @whiteboard/web dev)",
+      "Bash(curl -s http://localhost:3000)"
     ]
   }
 }

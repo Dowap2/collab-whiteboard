@@ -9,6 +9,9 @@ import { useFabricCanvas } from "@/hooks/useFabricCanvas";
 import { CursorOverlay } from "./CursorOverlay";
 import type { CanvasElement, PageSize, Point } from "@whiteboard/types";
 
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 5;
+
 const PAGE_SIZES: Record<PageSize, { width: number; height: number }> = {
   "A4":   { width: 794,  height: 1123 },
   "16:9": { width: 1280, height: 720  },
@@ -94,24 +97,29 @@ export function FabricCanvas({
     resizeTo(canvasW, canvasH);
   }, [resizeTo, canvasW, canvasH]);
 
-  // canvasWrapper 크기에 맞게 scale 계산 (스크롤바 없이 fit-to-viewport)
+  const fitScaleRef = useRef(1);
+  const [userZoom, setUserZoom] = useState<number | null>(null); // null = fit 모드
+
+  // canvasWrapper 크기에 맞게 fitScale 계산
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
     const update = (width: number, height: number) => {
-      const padding = 48; // 24px * 2
+      const padding = 48;
       const s = Math.min(
         (width - padding) / canvasW,
         (height - padding) / canvasH,
-        1, // 뷰포트가 캔버스보다 크면 1:1 유지
+        1,
       );
-      const clamped = Math.max(s, 0.1);
-      scaleRef.current = clamped;
-      setScale(clamped);
+      const fit = Math.max(s, 0.1);
+      fitScaleRef.current = fit;
+      if (userZoom === null) {
+        scaleRef.current = fit;
+        setScale(fit);
+      }
     };
 
-    // 초기값
     update(wrapper.clientWidth, wrapper.clientHeight);
 
     const observer = new ResizeObserver(([entry]) => {
@@ -120,7 +128,45 @@ export function FabricCanvas({
     });
     observer.observe(wrapper);
     return () => observer.disconnect();
-  }, [canvasW, canvasH]);
+  }, [canvasW, canvasH, userZoom]);
+
+  // userZoom 변경 시 scale 반영
+  useEffect(() => {
+    if (userZoom !== null) {
+      scaleRef.current = userZoom;
+      setScale(userZoom);
+    }
+  }, [userZoom]);
+
+  const zoomTo = useCallback((newZoom: number) => {
+    const clamped = Math.min(Math.max(newZoom, MIN_SCALE), MAX_SCALE);
+    setUserZoom(clamped);
+  }, []);
+
+  const zoomIn = useCallback(() => zoomTo((userZoom ?? fitScaleRef.current) * 1.2), [zoomTo, userZoom]);
+  const zoomOut = useCallback(() => zoomTo((userZoom ?? fitScaleRef.current) / 1.2), [zoomTo, userZoom]);
+  const zoomFit = useCallback(() => {
+    setUserZoom(null);
+    scaleRef.current = fitScaleRef.current;
+    setScale(fitScaleRef.current);
+  }, []);
+
+  // 마우스 휠 줌 (Ctrl/Cmd + 스크롤)
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const current = userZoom ?? fitScaleRef.current;
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      zoomTo(current * delta);
+    };
+
+    wrapper.addEventListener("wheel", handler, { passive: false });
+    return () => wrapper.removeEventListener("wheel", handler);
+  }, [userZoom, zoomTo]);
 
   // 화면 좌표 → canvas 내부 좌표 (CSS scale 보정)
   const getPoint = useCallback((e: React.MouseEvent): Point => {
@@ -231,12 +277,10 @@ export function FabricCanvas({
   );
 
   const cursor =
-    tool === "pen" ? "crosshair"
-    : tool === "eraser" ? "cell"
-    : tool === "text" ? "text"
+    tool === "text" ? "text"
     : tool === "select" ? "default"
     : tool === "laser" ? "none"
-    : "crosshair";
+    : undefined; // pen/eraser는 fabric이 직접 처리
 
   return (
     <div className={styles.viewport}>
@@ -271,6 +315,15 @@ export function FabricCanvas({
           />
           <CursorOverlay />
         </div>
+      </div>
+
+      {/* 줌 컨트롤 */}
+      <div className={styles.zoomControls}>
+        <button className={styles.zoomBtn} onClick={zoomOut} title="축소">-</button>
+        <button className={styles.zoomLabel} onClick={zoomFit} title="화면 맞춤">
+          {Math.round(scale * 100)}%
+        </button>
+        <button className={styles.zoomBtn} onClick={zoomIn} title="확대">+</button>
       </div>
 
       {/* 하단 컨트롤 (teacher only) */}
@@ -390,5 +443,48 @@ const styles = {
     cursor: pointer;
     transition: transform 0.1s;
     &:hover { transform: scale(1.2); }
+  `,
+  zoomControls: css`
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: #111827dd;
+    padding: 3px 4px;
+    border-radius: 6px;
+    backdrop-filter: blur(6px);
+    border: 1px solid #1f2937;
+    z-index: 10;
+  `,
+  zoomBtn: css`
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover { background: #374151; color: #f3f4f6; }
+  `,
+  zoomLabel: css`
+    min-width: 48px;
+    height: 28px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 11px;
+    font-family: monospace;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover { background: #374151; color: #f3f4f6; }
   `,
 };

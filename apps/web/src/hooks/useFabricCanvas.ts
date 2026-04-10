@@ -233,6 +233,29 @@ export function useFabricCanvas({
       fc.freeDrawingBrush.width = strokeWidth;
     }
 
+    // 커서 오버라이드: 펜/지우개일 때 동그라미 커서
+    if (tool === "pen") {
+      const r = Math.max(strokeWidth / 2, 2);
+      const svgSize = Math.ceil(r * 2 + 4);
+      const c = svgSize / 2;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${strokeColor}" stroke-width="0.5"/></svg>`;
+      const cur = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${c} ${c}, crosshair`;
+      fc.freeDrawingCursor = cur;
+      fc.defaultCursor = cur;
+    } else if (tool === "eraser") {
+      const svgSize = 24;
+      const c = svgSize / 2;
+      const r = 10;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#ff4444" stroke-width="1.5"/><circle cx="${c}" cy="${c}" r="1" fill="#ff4444"/></svg>`;
+      const cur = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${c} ${c}, cell`;
+      fc.defaultCursor = cur;
+      fc.hoverCursor = cur;
+    } else {
+      fc.freeDrawingCursor = "crosshair";
+      fc.defaultCursor = "default";
+      fc.hoverCursor = "move";
+    }
+
     fc.getObjects().forEach((obj: AnyFabric) => {
       obj.selectable = canDraw && tool === "select";
       obj.evented = canDraw;

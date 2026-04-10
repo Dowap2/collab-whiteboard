@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { css } from "@emotion/css";
 import { useCanvasStore } from "@/store/canvasStore";
 import type { ToolType } from "@whiteboard/types";
@@ -16,7 +18,7 @@ const TOOLS: { type: ToolType; label: string; icon: string; shortcut: string }[]
   { type: "laser",   label: "레이저", icon: "🔴", shortcut: "G" },
 ];
 
-const COLORS = [
+const PALETTE = [
   "#000000", "#ffffff", "#ef4444", "#f97316",
   "#eab308", "#22c55e", "#3b82f6", "#8b5cf6",
   "#ec4899", "#6b7280",
@@ -39,6 +41,94 @@ export function Toolbar() {
     setTextAlign,
   } = useCanvasStore();
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [hexInput, setHexInput] = useState(strokeColor);
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const colorBtnRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  const openPicker = useCallback(() => {
+    if (colorBtnRef.current) {
+      const rect = colorBtnRef.current.getBoundingClientRect();
+      setPopupPos({ top: rect.top, left: rect.right + 8 });
+    }
+    setPickerOpen((prev) => !prev);
+  }, []);
+
+  // 외부 클릭 시 피커 닫기
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        popupRef.current && !popupRef.current.contains(target) &&
+        colorBtnRef.current && !colorBtnRef.current.contains(target)
+      ) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [pickerOpen]);
+
+  // strokeColor 변경 시 hexInput 동기화
+  useEffect(() => {
+    setHexInput(strokeColor);
+  }, [strokeColor]);
+
+  const handleHexSubmit = () => {
+    const hex = hexInput.startsWith("#") ? hexInput : `#${hexInput}`;
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      setStrokeColor(hex);
+    } else {
+      setHexInput(strokeColor);
+    }
+  };
+
+  const pickerPopup = pickerOpen
+    ? createPortal(
+        <div
+          ref={popupRef}
+          className={styles.pickerPopup}
+          style={{ top: popupPos.top, left: popupPos.left }}
+        >
+          <div className={styles.paletteGrid}>
+            {PALETTE.map((c) => (
+              <button
+                key={c}
+                className={`${styles.colorButton} ${strokeColor === c ? styles.colorActive : ""}`}
+                style={{ background: c }}
+                onClick={() => setStrokeColor(c)}
+                title={c}
+              />
+            ))}
+          </div>
+          <div className={styles.pickerDivider} />
+          <input
+            type="color"
+            value={strokeColor}
+            onChange={(e) => setStrokeColor(e.target.value)}
+            className={styles.nativeColorInput}
+            title="색상 팔레트"
+          />
+          <div className={styles.hexRow}>
+            <span className={styles.hexLabel}>#</span>
+            <input
+              type="text"
+              className={styles.hexInput}
+              value={hexInput.replace("#", "")}
+              onChange={(e) => setHexInput(`#${e.target.value}`)}
+              onBlur={handleHexSubmit}
+              onKeyDown={(e) => { if (e.key === "Enter") handleHexSubmit(); }}
+              maxLength={6}
+              placeholder="000000"
+            />
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
   return (
     <div className={styles.toolbar}>
       <div className={styles.section}>
@@ -57,17 +147,18 @@ export function Toolbar() {
 
       <div className={styles.divider} />
 
+      {/* 컬러피커 트리거 */}
       <div className={styles.section}>
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            className={`${styles.colorButton} ${strokeColor === c ? styles.colorActive : ""}`}
-            style={{ background: c }}
-            onClick={() => setStrokeColor(c)}
-            title={c}
-          />
-        ))}
+        <button
+          ref={colorBtnRef}
+          className={styles.colorPreview}
+          style={{ background: strokeColor }}
+          onClick={openPicker}
+          title="색상 선택"
+        />
       </div>
+
+      {pickerPopup}
 
       <div className={styles.divider} />
 
@@ -191,18 +282,85 @@ const styles = {
     color: #4a9eff;
     &:hover { background: #4a9eff33; color: #4a9eff; }
   `,
+  colorPreview: css`
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    margin: 0 auto;
+    cursor: pointer;
+    transition: transform 0.15s;
+    &:hover { transform: scale(1.1); border-color: #4a9eff; }
+  `,
+  pickerPopup: css`
+    position: fixed;
+    background: #1e1e2e;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 10px;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 140px;
+  `,
+  paletteGrid: css`
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  `,
   colorButton: css`
     width: 22px;
     height: 22px;
     border-radius: 50%;
     border: 2px solid transparent;
-    margin: 0 auto;
+    cursor: pointer;
     transition: transform 0.15s;
     &:hover { transform: scale(1.15); }
   `,
   colorActive: css`
     border-color: #4a9eff;
     transform: scale(1.15);
+  `,
+  pickerDivider: css`
+    height: 1px;
+    background: #374151;
+  `,
+  nativeColorInput: css`
+    width: 100%;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+    padding: 0;
+    &::-webkit-color-swatch-wrapper { padding: 0; }
+    &::-webkit-color-swatch { border: 1px solid #374151; border-radius: 4px; }
+  `,
+  hexRow: css`
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 2px 6px;
+  `,
+  hexLabel: css`
+    color: #6b7280;
+    font-size: 12px;
+    font-family: monospace;
+  `,
+  hexInput: css`
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #f3f4f6;
+    font-size: 12px;
+    font-family: monospace;
+    outline: none;
+    width: 60px;
   `,
   widthButton: css`
     width: 36px;

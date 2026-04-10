@@ -148,8 +148,8 @@ export function WhiteboardRoom({ roomId }: Props) {
       />
 
       <div className={styles.workspace}>
-        {/* 좌측: 도구 모음 (teacher only) */}
-        {isTeacher && <Toolbar />}
+        {/* 좌측: 도구 모음 */}
+        <Toolbar />
 
         {/* 중앙: 캔버스 영역 */}
         <div className={styles.center}>
