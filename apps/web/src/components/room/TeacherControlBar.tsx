@@ -2,6 +2,7 @@
 
 import { css } from "@emotion/css";
 import * as Y from "yjs";
+import { DrawPermission } from "@whiteboard/types";
 
 interface Props {
   yMeta: Y.Map<string>;
@@ -24,19 +25,19 @@ export function TeacherControlBar({
 }: Props) {
   // drawPermission은 props로 받는 게 맞지만 여기선 yMeta에서 직접 읽음
   // WhiteboardRoom에서 이미 observer가 설정되어 있으므로 재렌더 시 최신 값 반영됨
-  const drawPermission = (yMeta.get("drawPermission") ?? "teacher-only") as
-    | "teacher-only"
-    | "all";
+  const drawPermission = (yMeta.get("drawPermission") ?? DrawPermission.TEACHER_ONLY) as DrawPermission;
 
   const togglePermission = () => {
-    const next = drawPermission === "teacher-only" ? "all" : "teacher-only";
+    const next = drawPermission === DrawPermission.TEACHER_ONLY
+      ? DrawPermission.ALL
+      : DrawPermission.TEACHER_ONLY;
     ydoc.transact(() => yMeta.set("drawPermission", next));
   };
 
   return (
     <div className={styles.bar}>
       <button className={styles.btn} onClick={togglePermission}>
-        {drawPermission === "teacher-only" ? "학생 잠금" : "학생 열기"}
+        {drawPermission === DrawPermission.TEACHER_ONLY ? "학생 잠금" : "학생 열기"}
       </button>
 
       <button

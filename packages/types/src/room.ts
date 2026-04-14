@@ -1,3 +1,8 @@
+export enum DrawPermission {
+  TEACHER_ONLY = "teacher-only",
+  ALL = "all",
+}
+
 export type Role = "teacher" | "student";
 
 export interface Room {
@@ -7,7 +12,7 @@ export interface Room {
   createdAt: string;
   hostId: string;
   participants: Participant[];
-  drawPermission: "teacher-only" | "all";
+  drawPermission: DrawPermission;
 }
 
 export interface Participant {

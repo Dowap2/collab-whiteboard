@@ -7,6 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { useCanvasStore } from "@/store/canvasStore";
 import { useFabricCanvas } from "@/hooks/useFabricCanvas";
 import { CursorOverlay } from "./CursorOverlay";
+import { DrawPermission } from "@whiteboard/types";
 import type { CanvasElement, PageSize, Point } from "@whiteboard/types";
 
 const MIN_SCALE = 0.1;
@@ -35,7 +36,7 @@ interface Props {
   yMeta: Y.Map<string>;
   ydoc: Y.Doc;
   isTeacher: boolean;
-  drawPermission: "teacher-only" | "all";
+  drawPermission: DrawPermission;
 }
 
 export function FabricCanvas({
@@ -56,7 +57,7 @@ export function FabricCanvas({
   const [scale, setScale] = useState(1);
 
   const { tool } = useCanvasStore();
-  const canDraw = isTeacher || drawPermission === "all";
+  const canDraw = isTeacher || drawPermission === DrawPermission.ALL;
 
   const [pageSize, setPageSize] = useState<PageSize>(
     () => (yMeta.get("pageSize") as PageSize) ?? "A4",

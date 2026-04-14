@@ -6,6 +6,7 @@ import { css } from "@emotion/css";
 import dynamic from "next/dynamic";
 import { useRoomStore } from "@/store/roomStore";
 import { useCanvasStore } from "@/store/canvasStore";
+import { DrawPermission } from "@whiteboard/types";
 import type { ToolType } from "@whiteboard/types";
 import { useSocketRoom } from "@/hooks/useSocketRoom";
 import { useYjsRoom } from "@/hooks/useYjsRoom";
@@ -45,13 +46,13 @@ export function WhiteboardRoom({ roomId }: Props) {
     usePdfImport({ yPages, yPageOrder, yMeta, ydoc, isTeacher });
 
   // drawPermission 구독
-  const [drawPermission, setDrawPermission] = useState<"teacher-only" | "all">("teacher-only");
+  const [drawPermission, setDrawPermission] = useState<DrawPermission>(DrawPermission.TEACHER_ONLY);
   useEffect(() => {
-    const existing = yMeta.get("drawPermission") as "teacher-only" | "all" | undefined;
+    const existing = yMeta.get("drawPermission") as DrawPermission | undefined;
     if (existing) setDrawPermission(existing);
 
     const handler = () => {
-      const p = yMeta.get("drawPermission") as "teacher-only" | "all";
+      const p = yMeta.get("drawPermission") as DrawPermission;
       if (p) setDrawPermission(p);
     };
     yMeta.observe(handler);
@@ -158,7 +159,7 @@ export function WhiteboardRoom({ roomId }: Props) {
             <div className={styles.studentBanner}>
               선생님:{" "}
               {room.participants.find((p) => p.id === room.hostId)?.nickname ?? ""}
-              {drawPermission === "teacher-only" && (
+              {drawPermission === DrawPermission.TEACHER_ONLY && (
                 <span className={styles.lockBadge}>읽기 전용</span>
               )}
             </div>

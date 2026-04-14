@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import { WhiteboardRoom } from "@/components/room/WhiteboardRoom";
+import { ErrorBoundary } from "@/components/providers/ErrorBoundary";
 
 interface Props {
   params: Promise<{ roomId: string }>;
@@ -9,5 +10,9 @@ interface Props {
 
 export default function RoomPage({ params }: Props) {
   const { roomId } = use(params);
-  return <WhiteboardRoom roomId={roomId} />;
+  return (
+    <ErrorBoundary>
+      <WhiteboardRoom roomId={roomId} />
+    </ErrorBoundary>
+  );
 }

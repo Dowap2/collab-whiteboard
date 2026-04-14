@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import * as Y from 'yjs';
+import { DrawPermission } from '@whiteboard/types';
 import type { Room, Participant, CreateRoomDto, JoinRoomDto, JoinRoomResponse } from '@whiteboard/types';
 
 const PARTICIPANT_COLORS = [
@@ -32,7 +33,7 @@ export class RoomsService {
       createdAt: new Date().toISOString(),
       hostId: participantId,
       participants: [participant],
-      drawPermission: 'teacher-only',
+      drawPermission: DrawPermission.TEACHER_ONLY,
     };
 
     this.rooms.set(code, room);

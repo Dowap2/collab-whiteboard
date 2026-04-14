@@ -21,7 +21,11 @@
       "Bash(git check-ignore:*)",
       "Bash(node:*)",
       "Bash(pnpm --filter @whiteboard/web dev)",
-      "Bash(curl -s http://localhost:3000)"
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(find ./apps/server/src -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec wc -l {} +)",
+      "Bash(find ./apps/web/src -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec wc -l {} +)",
+      "Bash(pnpm --filter @whiteboard/types build)",
+      "Bash(pnpm --filter @whiteboard/types exec tsc --noEmit)"
     ]
   }
 }
